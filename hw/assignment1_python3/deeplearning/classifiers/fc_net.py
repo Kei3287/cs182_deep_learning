@@ -101,7 +101,7 @@ class TwoLayerNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         loss, dq = softmax_loss(scores, y)
-        assert np.all(np.isfinite(loss)), ("Softmax loss contains NaN or infinity")
+        assert np.all(np.isfinite(loss)), ("Softmax loss contains NaN or infinity: {}".format(loss))
         loss += 0.5 * self.reg * (np.sum(self.params['W1']**2) + np.sum(self.params['W2']**2))
         dx, dw, db = affine_backward(dq, cache_affine2)
         grads['W2'] = dw + (self.reg * self.params['W2'])
@@ -266,7 +266,7 @@ class FullyConnectedNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         loss, dq = softmax_loss(scores, y)
-        assert np.all(np.isfinite(loss)), ("Softmax loss contains NaN or infinity")
+        assert np.all(np.isfinite(loss)), ("Softmax loss contains NaN or infinity: {}".format(loss))
         total = [np.sum(self.params['W{}'.format(i)]**2) for i in range(1, self.num_layers+1)]
         loss += 0.5 * self.reg * np.sum(np.array(total))
         dx, dw, db = affine_backward(dq, affine_caches[self.num_layers])
@@ -285,3 +285,4 @@ class FullyConnectedNet(object):
         ############################################################################
 
         return loss, grads
+
