@@ -247,6 +247,7 @@ class FullyConnectedNet(object):
         affine_caches = {}
         relu_caches = {}
         bn_caches = {}
+        dropout_caches = {}
         for i in range(1, self.num_layers):
           if self.use_batchnorm:
             X, cache = affine_bn_relu_forward(X, self.params['W{}'.format(i)], self.params['b{}'.format(i)], self.params['gamma{}'.format(i)], self.params['beta{}'.format(i)], self.bn_params[i-1])
@@ -254,7 +255,8 @@ class FullyConnectedNet(object):
           else:
             X, cache = affine_relu_forward(X, self.params['W{}'.format(i)], self.params['b{}'.format(i)])
             affine_caches[i], relu_caches[i] = cache
-
+          if self.use_dropout:
+            X, dropout_caches[i] = dropout_forward(X, self.dropout_param)
         # last affine layer
         scores, affine_caches[self.num_layers] = affine_forward(X, self.params['W{}'.format(self.num_layers)], self.params['b{}'.format(self.num_layers)])
 
@@ -294,6 +296,8 @@ class FullyConnectedNet(object):
         l = list(range(1, self.num_layers))
         l.reverse()
         for i in l:
+          if self.use_dropout:
+            dx = dropout_backward(dx, dropout_caches[i])
           if self.use_batchnorm:
             dx, dw, db, dgamma, dbeta = affine_bn_relu_backward(dx, (affine_caches[i], bn_caches[i], relu_caches[i]))
             grads['gamma{}'.format(i)] = dgamma
