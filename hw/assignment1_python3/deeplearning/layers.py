@@ -385,16 +385,15 @@ def conv_forward_naive(x, w, b, conv_param):
     p = conv_param['pad']
     out = np.zeros((x.shape[0], w.shape[0], round(1.0+(x.shape[2]+2.0*p-w.shape[2])/s), round(1.0+(x.shape[3]+2.0*p-w.shape[3])/s)))
     npad = ((0, 0), (0, 0), (p, p), (p, p))
-    x = np.pad(x, npad, 'constant', constant_values=(0, 0))
-    print(x.shape)
-    N, C, H, W = x.shape
+    x_pad = np.pad(x, npad, 'constant', constant_values=(0, 0))
+    N, C, H, W = x_pad.shape
     F, _, f_H, f_W = w.shape
 
     out_w = 0
     for width in np.arange(start=0, stop=W-f_W+1, step=s): # width
       out_h = 0
       for height in np.arange(start=0, stop=H-f_H+1, step=s): # height
-        newX = x[:, :, height:height+f_H, width:width+f_W].reshape((N, C*f_H*f_W))
+        newX = x_pad[:, :, height:height+f_H, width:width+f_W].reshape((N, C*f_H*f_W))
         newW = w.reshape((F, C*f_H*f_W))
         temp = newX @ newW.T + b
         out[:,:,out_h,out_w] = temp.reshape(N, F)
@@ -425,7 +424,49 @@ def conv_backward_naive(dout, cache):
     #############################################################################
     # TODO: Implement the convolutional backward pass.                          #
     #############################################################################
-    pass
+    x, w, b, conv_param = cache
+    dx = np.zeros(x.shape)
+    dw = np.zeros(w.shape)
+    db = np.zeros(b.shape)
+    s = conv_param['stride']
+    p = conv_param['pad']
+    # print(w.shape)
+    w_180 = np.flip(w,(2, 3)).transpose(1, 0, 2, 3)
+    # print(w_180.shape)
+    npad = ((0, 0), (0, 0), (p, p), (p, p))
+    x_pad = np.pad(x, npad, 'constant', constant_values=(0, 0))
+    dx = np.pad(dx, npad, 'constant', constant_values=(0, 0))
+    npad = ((0, 0), (0, 0), (w.shape[3]-1, w.shape[3]-1), (w.shape[2]-1, w.shape[2]-1))
+    dout_pad = np.pad(dout, npad, 'constant', constant_values=(0, 0))
+    # print(dout_pad.shape)
+
+
+    N, C, H, W = x.shape
+    F, _, f_H, f_W = w.shape
+
+    # print(np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s))
+    out_w = 0
+    for width in np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s):
+      out_h = 0
+      for height in np.arange(start=0, stop=dout_pad.shape[2]-f_H+1, step=s):
+        newW = w_180.reshape((C, F*f_H*f_W))
+        newDout = dout_pad[:, :, height:height+f_H, width:width+f_W].reshape((N, F*f_H*f_W))
+        dx[:, :, out_h, out_w] = newDout @ newW.T
+        out_h += 1
+      out_w += 1
+    dx = dx[:, :, p:-p, p:-p]
+
+
+    out_w = 0
+    for width in np.arange(start=0, stop=x_pad.shape[3]-dout.shape[3]+1, step=s):
+      out_h = 0
+      for height in np.arange(start=0, stop=x_pad.shape[2]-dout.shape[2]+1, step=s):
+        newX = x_pad[:, :, height:height+dout.shape[2], width:width+dout.shape[3]].transpose(1, 0, 2, 3).reshape((C, N*dout.shape[2]*dout.shape[3]))
+        newDout = dout.transpose(1, 0, 2, 3).reshape((F, N*dout.shape[2]*dout.shape[3]))
+        dw[:,:,out_h,out_w] = newDout @ newX.T
+        out_h += 1
+      out_w += 1
+    db = np.sum(dout, axis=(0, 2, 3))
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
