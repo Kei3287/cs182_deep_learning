@@ -389,17 +389,13 @@ def conv_forward_naive(x, w, b, conv_param):
     N, C, H, W = x_pad.shape
     F, _, f_H, f_W = w.shape
 
-    out_w = 0
-    for width in np.arange(start=0, stop=W-f_W+1, step=s): # width
-      out_h = 0
-      for height in np.arange(start=0, stop=H-f_H+1, step=s): # height
-        newX = x_pad[:, :, height:height+f_H, width:width+f_W].reshape((N, C*f_H*f_W))
+    for width in range(out.shape[3]):
+      for height in range(out.shape[2]):
+        newX = x_pad[:, :, height*s:height*s+f_H, width*s:width*s+f_W].reshape((N, C*f_H*f_W))
         newW = w.reshape((F, C*f_H*f_W))
         temp = newX @ newW.T + b
-        out[:,:,out_h,out_w] = temp.reshape(N, F)
+        out[:,:,height,width] = temp.reshape(N, F)
 
-        out_h += 1
-      out_w += 1
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -436,7 +432,7 @@ def conv_backward_naive(dout, cache):
     npad = ((0, 0), (0, 0), (p, p), (p, p))
     x_pad = np.pad(x, npad, 'constant', constant_values=(0, 0))
     dx = np.pad(dx, npad, 'constant', constant_values=(0, 0))
-    npad = ((0, 0), (0, 0), (w.shape[3]-1, w.shape[3]-1), (w.shape[2]-1, w.shape[2]-1))
+    npad = ((0, 0), (0, 0), (w.shape[2]-1, w.shape[2]-1), (w.shape[3]-1, w.shape[3]-1))
     dout_pad = np.pad(dout, npad, 'constant', constant_values=(0, 0))
     # print(dout_pad.shape)
 
@@ -444,7 +440,7 @@ def conv_backward_naive(dout, cache):
     N, C, H, W = x.shape
     F, _, f_H, f_W = w.shape
 
-    # print(np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s))
+    print(np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s))
     out_w = 0
     for width in np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s):
       out_h = 0
@@ -457,15 +453,14 @@ def conv_backward_naive(dout, cache):
     dx = dx[:, :, p:-p, p:-p]
 
 
-    out_w = 0
-    for width in np.arange(start=0, stop=x_pad.shape[3]-dout.shape[3]+1, step=s):
-      out_h = 0
-      for height in np.arange(start=0, stop=x_pad.shape[2]-dout.shape[2]+1, step=s):
-        newX = x_pad[:, :, height:height+dout.shape[2], width:width+dout.shape[3]].transpose(1, 0, 2, 3).reshape((C, N*dout.shape[2]*dout.shape[3]))
-        newDout = dout.transpose(1, 0, 2, 3).reshape((F, N*dout.shape[2]*dout.shape[3]))
-        dw[:,:,out_h,out_w] = newDout @ newX.T
-        out_h += 1
-      out_w += 1
+    print(dw.shape)
+    f_H = dout.shape[2]
+    f_W = dout.shape[3]
+    for w in range(dw.shape[3]):
+      for h in range(dw.shape[2]):
+        newX = x_pad[:, :, h*s:h*s+f_H, w*s:w*s+f_W].transpose(1, 0, 2, 3).reshape((C, N*f_H*f_W))
+        newDout = dout.transpose(1, 0, 2, 3).reshape((F, N*f_H*f_W))
+        dw[:,:,h,w] = newDout @ newX.T
     db = np.sum(dout, axis=(0, 2, 3))
     #############################################################################
     #                             END OF YOUR CODE                              #
