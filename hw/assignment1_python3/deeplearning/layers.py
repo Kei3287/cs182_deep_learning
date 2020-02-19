@@ -434,7 +434,7 @@ def conv_backward_naive(dout, cache):
     dx = np.pad(dx, npad, 'constant', constant_values=(0, 0))
     npad = ((0, 0), (0, 0), (w.shape[2]-1, w.shape[2]-1), (w.shape[3]-1, w.shape[3]-1))
     dout_pad = np.pad(dout, npad, 'constant', constant_values=(0, 0))
-    # print(dout_pad.shape)
+    # print(dout_pad.shape)x
 
 
     N, C, H, W = x.shape
