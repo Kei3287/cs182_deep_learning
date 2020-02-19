@@ -424,36 +424,38 @@ def conv_backward_naive(dout, cache):
     dx = np.zeros(x.shape)
     dw = np.zeros(w.shape)
     db = np.zeros(b.shape)
-    s = conv_param['stride']
-    p = conv_param['pad']
-    # print(w.shape)
-    w_180 = np.flip(w,(2, 3)).transpose(1, 0, 2, 3)
-    # print(w_180.shape)
+    print(w.shape)
+    print(dout.shape)
+    # print(x.shape)
+    # print(dout.shape)
+    s, p = conv_param['stride'], conv_param['pad']
+    w_flip = np.flip(w,(2, 3)).transpose(1, 0, 2, 3)
     npad = ((0, 0), (0, 0), (p, p), (p, p))
     x_pad = np.pad(x, npad, 'constant', constant_values=(0, 0))
     dx = np.pad(dx, npad, 'constant', constant_values=(0, 0))
     npad = ((0, 0), (0, 0), (w.shape[2]-1, w.shape[2]-1), (w.shape[3]-1, w.shape[3]-1))
     dout_pad = np.pad(dout, npad, 'constant', constant_values=(0, 0))
-    # print(dout_pad.shape)x
-
+    print(dout_pad.shape)
 
     N, C, H, W = x.shape
     F, _, f_H, f_W = w.shape
 
-    print(np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s))
+    # print(np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s))
+    count = 0
     out_w = 0
     for width in np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s):
       out_h = 0
       for height in np.arange(start=0, stop=dout_pad.shape[2]-f_H+1, step=s):
-        newW = w_180.reshape((C, F*f_H*f_W))
+        count += 1
+        newW = w_flip.reshape((C, F*f_H*f_W))
         newDout = dout_pad[:, :, height:height+f_H, width:width+f_W].reshape((N, F*f_H*f_W))
         dx[:, :, out_h, out_w] = newDout @ newW.T
         out_h += 1
       out_w += 1
     dx = dx[:, :, p:-p, p:-p]
+    print(count)
 
 
-    print(dw.shape)
     f_H = dout.shape[2]
     f_W = dout.shape[3]
     for w in range(dw.shape[3]):
