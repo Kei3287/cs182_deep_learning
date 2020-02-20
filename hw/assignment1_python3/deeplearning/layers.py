@@ -491,18 +491,16 @@ def max_pool_forward_naive(x, pool_param):
     f_W = pool_param['pool_width']
     s = pool_param['stride']
     N, C, H, W = x.shape
-    out = np.zeros((x.shape[0], x.shape[1], round(1.0+(H-f_H)/s), round(1.0+(W-f_W)/s)))
+    out = np.zeros((N, C, round(1.0+(H-f_H)/s), round(1.0+(W-f_W)/s)))
     max_indices = {}
 
     for n in range(N):
       for c in range(C):
-        for h in range(f_H):
-          for w in range(f_W):
-            # print(x[n, c, h*s:h*s+f_H, w*s:w*s+f_W])
+        for h in range(out.shape[2]):
+          for w in range(out.shape[3]):
             i = np.argmax(x[n, c, h*s:h*s+f_H, w*s:w*s+f_W])
             max_indices['{}_{}_{}_{}'.format(n, c, h, w)] = i
             out[n, c, h, w] = np.max(x[n, c, h*s:h*s+f_H, w*s:w*s+f_W])
-
 
     #############################################################################
     #                             END OF YOUR CODE                              #
@@ -534,8 +532,8 @@ def max_pool_backward_naive(dout, cache):
     dx = np.zeros(x.shape)
     for n in range(N):
       for c in range(C):
-        for h in range(f_H):
-          for w in range(f_W):
+        for h in range(dout.shape[2]):
+          for w in range(dout.shape[3]):
             i = max_indices['{}_{}_{}_{}'.format(n, c, h, w)]
             temp = dx[n, c, h*s:h*s+f_H, w*s:w*s+f_W].flatten()
             temp[i] = dout[n, c, h, w]
