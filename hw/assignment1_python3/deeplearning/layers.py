@@ -421,48 +421,46 @@ def conv_backward_naive(dout, cache):
     # TODO: Implement the convolutional backward pass.                          #
     #############################################################################
     x, w, b, conv_param = cache
+    s, p = conv_param['stride'], conv_param['pad']
+    N, C, H, W = x.shape
+    F, _, f_H, f_W = w.shape
+
+
+    # setup the right dimension
     dx = np.zeros(x.shape)
     dw = np.zeros(w.shape)
     db = np.zeros(b.shape)
-    print(w.shape)
-    print(dout.shape)
-    # print(x.shape)
-    # print(dout.shape)
-    s, p = conv_param['stride'], conv_param['pad']
     w_flip = np.flip(w,(2, 3)).transpose(1, 0, 2, 3)
     npad = ((0, 0), (0, 0), (p, p), (p, p))
     x_pad = np.pad(x, npad, 'constant', constant_values=(0, 0))
     dx = np.pad(dx, npad, 'constant', constant_values=(0, 0))
+
+    # Dilate dout matrix for dx and dw by "stride - 1"
+    dout_dilate = dout
+    for i in reversed(range(1, dout_dilate.shape[2])):
+      for _ in range(s-1):
+        dout_dilate = np.insert(dout_dilate, i, 0, axis = 2)
+        dout_dilate = np.insert(dout_dilate, i, 0, axis = 3)
+
+    # Pad dout matrix for dx by "filter_size - 1"
     npad = ((0, 0), (0, 0), (w.shape[2]-1, w.shape[2]-1), (w.shape[3]-1, w.shape[3]-1))
-    dout_pad = np.pad(dout, npad, 'constant', constant_values=(0, 0))
-    print(dout_pad.shape)
+    dout_dilate_pad = np.pad(dout_dilate, npad, 'constant', constant_values=(0, 0))
 
-    N, C, H, W = x.shape
-    F, _, f_H, f_W = w.shape
-
-    # print(np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s))
-    count = 0
-    out_w = 0
-    for width in np.arange(start=0, stop=dout_pad.shape[3]-f_W+1, step=s):
-      out_h = 0
-      for height in np.arange(start=0, stop=dout_pad.shape[2]-f_H+1, step=s):
-        count += 1
+    # To get dx, run convolution of w_flip and dout_dilate_pad with stride 1
+    for width in range(dx.shape[3]):
+      for height in range(dx.shape[2]):
         newW = w_flip.reshape((C, F*f_H*f_W))
-        newDout = dout_pad[:, :, height:height+f_H, width:width+f_W].reshape((N, F*f_H*f_W))
-        dx[:, :, out_h, out_w] = newDout @ newW.T
-        out_h += 1
-      out_w += 1
+        newDout = dout_dilate_pad[:, :, height:height+f_H, width:width+f_W].reshape((N, F*f_H*f_W))
+        dx[:, :, height, width] = newDout @ newW.T
     dx = dx[:, :, p:-p, p:-p]
-    print(count)
 
-
-    f_H = dout.shape[2]
-    f_W = dout.shape[3]
-    for w in range(dw.shape[3]):
-      for h in range(dw.shape[2]):
-        newX = x_pad[:, :, h*s:h*s+f_H, w*s:w*s+f_W].transpose(1, 0, 2, 3).reshape((C, N*f_H*f_W))
-        newDout = dout.transpose(1, 0, 2, 3).reshape((F, N*f_H*f_W))
-        dw[:,:,h,w] = newDout @ newX.T
+    # To get dw, run convolution of x_pad and dout_dilate with stride 1
+    _, _, f_H, f_W = dout_dilate.shape
+    for width in range(dw.shape[3]):
+      for height in range(dw.shape[2]):
+        newX = x_pad[:, :, height:height+f_H, width:width+f_W].transpose(1, 0, 2, 3).reshape((C, N*f_H*f_W))
+        newDout = dout_dilate.transpose(1, 0, 2, 3).reshape((F, N*f_H*f_W))
+        dw[:,:,height,width] = newDout @ newX.T
     db = np.sum(dout, axis=(0, 2, 3))
     #############################################################################
     #                             END OF YOUR CODE                              #
@@ -532,16 +530,16 @@ def max_pool_backward_naive(dout, cache):
     f_H = pool_param['pool_height']
     f_W = pool_param['pool_width']
     s = pool_param['stride']
-    N, C, H, W = x.shape
+    N, C, _, _ = x.shape
     dx = np.zeros(x.shape)
     for n in range(N):
       for c in range(C):
         for h in range(f_H):
           for w in range(f_W):
-              i = max_indices['{}_{}_{}_{}'.format(n, c, h, w)]
-              temp = dx[n, c, h*s:h*s+f_H, w*s:w*s+f_W].flatten()
-              temp[i] = dout[n, c, h, w]
-              dx[n, c, h*s:h*s+f_H, w*s:w*s+f_W] = temp.reshape(1, 1, f_H, f_W)
+            i = max_indices['{}_{}_{}_{}'.format(n, c, h, w)]
+            temp = dx[n, c, h*s:h*s+f_H, w*s:w*s+f_W].flatten()
+            temp[i] = dout[n, c, h, w]
+            dx[n, c, h*s:h*s+f_H, w*s:w*s+f_W] = temp.reshape(1, 1, f_H, f_W)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
