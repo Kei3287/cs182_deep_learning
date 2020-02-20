@@ -169,6 +169,10 @@ class MyConvNet(object):
         self.params['b1'] = np.zeros(num_filters)
         self.params['b2'] = np.zeros(hidden_dim)
         self.params['b3'] = np.zeros(num_classes)
+
+        self.params['gamma2'] = np.ones(hidden_dim)
+        self.params['beta2'] = np.zeros(hidden_dim)
+        self.bn_params = [{'mode':'train'}, {'mode':'train'}]
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -185,6 +189,7 @@ class MyConvNet(object):
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
         W3, b3 = self.params['W3'], self.params['b3']
+        gamma2, beta2 = self.params['gamma2'], self.params['beta2']
 
         # pass conv_param to the forward pass for the convolutional layer
         filter_size = W1.shape[2]
@@ -199,8 +204,11 @@ class MyConvNet(object):
         # computing the class scores for X and storing them in the scores          #
         # variable.                                                                #
         ############################################################################
+        mode = 'test' if y is None else 'train'
+        for bn_param in self.bn_params:
+            bn_param[mode] = mode
         out, pool_cache = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
-        out, affine1_cache = affine_relu_forward(out, W2, b2)
+        out, affine1_cache = affine_bn_relu_forward(out, W2, b2, gamma2, beta2, self.bn_params[1])
         scores, affine2_cache = affine_forward(out, W3, b3)
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -209,7 +217,7 @@ class MyConvNet(object):
         if y is None:
             return scores
 
-        loss, grads = 0, {}
+        loss, grads = 0.0, {}
         ############################################################################
         # TODO: Implement the backward pass for the three-layer convolutional net, #
         # storing the loss and gradients in the loss and grads variables. Compute  #
@@ -225,7 +233,9 @@ class MyConvNet(object):
         dx, dw, db = affine_backward(dx, affine2_cache)
         grads['W3'] = dw + (self.reg * self.params['W3'])
         grads['b3'] = db
-        dx, dw, db = affine_relu_backward(dx, affine1_cache)
+        dx, dw, db, dgamma, dbeta = affine_bn_relu_backward(dx, affine1_cache)
+        grads['gamma2'] = dgamma
+        grads['beta2'] = dbeta
         grads['W2'] = dw + (self.reg * self.params['W2'])
         grads['b2'] = db
         dx, dw, db = conv_relu_pool_backward(dx, pool_cache)
