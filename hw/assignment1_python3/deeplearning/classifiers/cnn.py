@@ -170,6 +170,8 @@ class MyConvNet(object):
         self.params['b2'] = np.zeros(hidden_dim)
         self.params['b3'] = np.zeros(num_classes)
 
+        self.params['gamma1'] = np.ones(num_filters)
+        self.params['beta1'] = np.zeros(num_filters)
         self.params['gamma2'] = np.ones(hidden_dim)
         self.params['beta2'] = np.zeros(hidden_dim)
         self.bn_params = [{'mode':'train'}, {'mode':'train'}]
@@ -189,6 +191,7 @@ class MyConvNet(object):
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
         W3, b3 = self.params['W3'], self.params['b3']
+        gamma1, beta1 = self.params['gamma1'], self.params['beta1']
         gamma2, beta2 = self.params['gamma2'], self.params['beta2']
 
         # pass conv_param to the forward pass for the convolutional layer
@@ -207,7 +210,7 @@ class MyConvNet(object):
         mode = 'test' if y is None else 'train'
         for bn_param in self.bn_params:
             bn_param[mode] = mode
-        out, pool_cache = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+        out, pool_cache = conv_bn_relu_pool_forward(X, W1, b1, gamma1, beta1, conv_param, pool_param, self.bn_params[0])
         out, affine1_cache = affine_bn_relu_forward(out, W2, b2, gamma2, beta2, self.bn_params[1])
         scores, affine2_cache = affine_forward(out, W3, b3)
         ############################################################################
@@ -238,7 +241,9 @@ class MyConvNet(object):
         grads['beta2'] = dbeta
         grads['W2'] = dw + (self.reg * self.params['W2'])
         grads['b2'] = db
-        dx, dw, db = conv_relu_pool_backward(dx, pool_cache)
+        dx, dw, db, dgamma, dbeta = conv_bn_relu_pool_backward(dx, pool_cache)
+        grads['gamma1'] = dgamma
+        grads['beta1'] = dbeta
         grads['W1'] = dw + (self.reg * self.params['W1'])
         grads['b1'] = db
         ############################################################################
