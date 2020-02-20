@@ -123,7 +123,10 @@ class MyConvNet(object):
     """
     A three-layer convolutional network with the following architecture:
 
-    conv - relu - 2x2 max pool - affine - relu - affine - softmax
+    conv - batchnorm - relu - 2x2 max pool -
+    affine - batchnorm - relu -
+    affine  - batchnorm - relu -
+    affine - softmax
 
     The network operates on minibatches of data that have shape (N, C, H, W)
     consisting of N images, each with height H and width W and with C input
@@ -165,16 +168,20 @@ class MyConvNet(object):
         C, H, W = input_dim
         self.params['W1'] = np.random.randn(num_filters, C, filter_size, filter_size) * weight_scale
         self.params['W2'] = np.random.randn(num_filters * (H // 2) * (W //2), hidden_dim) * weight_scale
-        self.params['W3'] = np.random.randn(hidden_dim, num_classes) * weight_scale
+        self.params['W3'] = np.random.randn(hidden_dim, hidden_dim) * weight_scale
+        self.params['W4'] = np.random.randn(hidden_dim, num_classes) * weight_scale
         self.params['b1'] = np.zeros(num_filters)
         self.params['b2'] = np.zeros(hidden_dim)
-        self.params['b3'] = np.zeros(num_classes)
+        self.params['b3'] = np.zeros(hidden_dim)
+        self.params['b4'] = np.zeros(num_classes)
 
         self.params['gamma1'] = np.ones(num_filters)
         self.params['beta1'] = np.zeros(num_filters)
         self.params['gamma2'] = np.ones(hidden_dim)
         self.params['beta2'] = np.zeros(hidden_dim)
-        self.bn_params = [{'mode':'train'}, {'mode':'train'}]
+        self.params['gamma3'] = np.ones(hidden_dim)
+        self.params['beta3'] = np.zeros(hidden_dim)
+        self.bn_params = [{'mode':'train'}, {'mode':'train'}, {'mode':'train'}]
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -191,8 +198,10 @@ class MyConvNet(object):
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
         W3, b3 = self.params['W3'], self.params['b3']
+        W4, b4 = self.params['W4'], self.params['b4']
         gamma1, beta1 = self.params['gamma1'], self.params['beta1']
         gamma2, beta2 = self.params['gamma2'], self.params['beta2']
+        gamma3, beta3 = self.params['gamma3'], self.params['beta3']
 
         # pass conv_param to the forward pass for the convolutional layer
         filter_size = W1.shape[2]
@@ -209,10 +218,11 @@ class MyConvNet(object):
         ############################################################################
         mode = 'test' if y is None else 'train'
         for bn_param in self.bn_params:
-            bn_param[mode] = mode
+            bn_param['mode'] = mode
         out, pool_cache = conv_bn_relu_pool_forward(X, W1, b1, gamma1, beta1, conv_param, pool_param, self.bn_params[0])
         out, affine1_cache = affine_bn_relu_forward(out, W2, b2, gamma2, beta2, self.bn_params[1])
-        scores, affine2_cache = affine_forward(out, W3, b3)
+        out, affine2_cache = affine_bn_relu_forward(out, W3, b3, gamma3, beta3, self.bn_params[2])
+        scores, affine3_cache = affine_forward(out, W4, b4)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -227,20 +237,25 @@ class MyConvNet(object):
         # data loss using softmax, and make sure that grads[k] holds the gradients #
         # for self.params[k]. Don't forget to add L2 regularization!               #
         ############################################################################
-        if self.loss_fn == 'softmax':
-            loss, dx = softmax_loss(scores, y)
-        else:
-            loss, dx = svm_loss(scores, y)
+        loss, dx = softmax_loss(scores, y)
         assert np.all(np.isfinite(loss)), ("Softmax loss contains NaN or infinity: {}".format(loss))
-        loss += 0.5 * self.reg * (np.sum(self.params['W1']**2) + np.sum(self.params['W2']**2 + np.sum(self.params['W3']**2)))
-        dx, dw, db = affine_backward(dx, affine2_cache)
+        loss += 0.5 * self.reg * (np.sum(self.params['W1']**2) + np.sum(self.params['W2']**2 + np.sum(self.params['W3']**2) + np.sum(self.params['W4']**2)))
+        dx, dw, db = affine_backward(dx, affine3_cache)
+        grads['W4'] = dw + (self.reg * self.params['W4'])
+        grads['b4'] = db
+
+        dx, dw, db, dgamma, dbeta = affine_bn_relu_backward(dx, affine2_cache)
+        grads['gamma3'] = dgamma
+        grads['beta3'] = dbeta
         grads['W3'] = dw + (self.reg * self.params['W3'])
         grads['b3'] = db
+
         dx, dw, db, dgamma, dbeta = affine_bn_relu_backward(dx, affine1_cache)
         grads['gamma2'] = dgamma
         grads['beta2'] = dbeta
         grads['W2'] = dw + (self.reg * self.params['W2'])
         grads['b2'] = db
+
         dx, dw, db, dgamma, dbeta = conv_bn_relu_pool_backward(dx, pool_cache)
         grads['gamma1'] = dgamma
         grads['beta1'] = dbeta
