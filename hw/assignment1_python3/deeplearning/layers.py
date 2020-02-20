@@ -415,6 +415,10 @@ def conv_backward_naive(dout, cache):
     - dx: Gradient with respect to x
     - dw: Gradient with respect to w
     - db: Gradient with respect to b
+
+    Refereces:
+    https://medium.com/@mayank.utexas/backpropagation-for-convolution-with-strides-8137e4fc2710
+    https://medium.com/@mayank.utexas/backpropagation-for-convolution-with-strides-fb2f2efc4faa
     """
     dx, dw, db = None, None, None
     #############################################################################
@@ -422,7 +426,7 @@ def conv_backward_naive(dout, cache):
     #############################################################################
     x, w, b, conv_param = cache
     s, p = conv_param['stride'], conv_param['pad']
-    N, C, H, W = x.shape
+    N, C, _, _ = x.shape
     F, _, f_H, f_W = w.shape
 
 
@@ -435,14 +439,14 @@ def conv_backward_naive(dout, cache):
     x_pad = np.pad(x, npad, 'constant', constant_values=(0, 0))
     dx = np.pad(dx, npad, 'constant', constant_values=(0, 0))
 
-    # Dilate dout matrix for dx and dw by "stride - 1"
+    # Dilate dout matrix with "stride - 1"
     dout_dilate = dout
     for i in reversed(range(1, dout_dilate.shape[2])):
       for _ in range(s-1):
         dout_dilate = np.insert(dout_dilate, i, 0, axis = 2)
         dout_dilate = np.insert(dout_dilate, i, 0, axis = 3)
 
-    # Pad dout matrix for dx by "filter_size - 1"
+    # Pad dout matrix for dx with "filter_size - 1"
     npad = ((0, 0), (0, 0), (w.shape[2]-1, w.shape[2]-1), (w.shape[3]-1, w.shape[3]-1))
     dout_dilate_pad = np.pad(dout_dilate, npad, 'constant', constant_values=(0, 0))
 
@@ -573,11 +577,9 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # be very short; ours is less than five lines.                              #
     #############################################################################
     N, C, H, W = x.shape
-    x = x.transpose(0, 2, 3, 1)
-    x = x.reshape(N * H * W, C)
+    x = x.transpose(0, 2, 3, 1).reshape(N * H * W, C)
     out, cache = batchnorm_forward(x, gamma, beta, bn_param)
-    out = out.reshape(N, H, W, C)
-    out = out.transpose(0, 3, 1, 2)
+    out = out.reshape(N, H, W, C).transpose(0, 3, 1, 2)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
@@ -608,11 +610,9 @@ def spatial_batchnorm_backward(dout, cache):
     # be very short; ours is less than five lines.                              #
     #############################################################################
     N, C, H, W = dout.shape
-    dout = dout.transpose(0, 2, 3, 1)
-    dout = dout.reshape(N * H * W, C)
+    dout = dout.transpose(0, 2, 3, 1).reshape(N * H * W, C)
     dx, dgamma, dbeta = batchnorm_backward(dout, cache)
-    dx = dx.reshape(N, H, W, C)
-    dx = dx.transpose(0, 3, 1, 2)
+    dx = dx.reshape(N, H, W, C).transpose(0, 3, 1, 2)
     #############################################################################
     #                             END OF YOUR CODE                              #
     #############################################################################
