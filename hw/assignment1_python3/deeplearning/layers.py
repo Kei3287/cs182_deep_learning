@@ -89,6 +89,11 @@ def relu_forward(x):
     cache = x
     return out, cache
 
+def leaky_relu_forward(x):
+  out = np.where(x > 0, x, x * 0.1)
+  cache = x
+  return out, cache
+
 
 def relu_backward(dout, cache):
     """
@@ -112,6 +117,9 @@ def relu_backward(dout, cache):
     #############################################################################
     return dx
 
+def leaky_relu_backward(dout, cache):
+  x = cache
+  return dout * np.where(x > 0, 1.0, 0.1)
 
 def batchnorm_forward(x, gamma, beta, bn_param):
     """
@@ -576,6 +584,8 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # version of batch normalization defined above. Your implementation should  #
     # be very short; ours is less than five lines.                              #
     #############################################################################
+
+    # Reference : https://www.reddit.com/r/cs231n/comments/6agt4s/assignment_2_spatial_batchnorm/
     N, C, H, W = x.shape
     x = x.transpose(0, 2, 3, 1).reshape(N * H * W, C)
     out, cache = batchnorm_forward(x, gamma, beta, bn_param)
@@ -664,7 +674,7 @@ def softmax_loss(x, y):
     probs = np.exp(x - np.max(x, axis=1, keepdims=True))
     probs /= np.sum(probs, axis=1, keepdims=True)
     N = x.shape[0]
-    loss = -np.sum(np.log(probs[np.arange(N), y])) / N
+    loss = -np.sum(np.log(probs[np.arange(N), y]+1e-8)) / N
     dx = probs.copy()
     dx[np.arange(N), y] -= 1
     dx /= N

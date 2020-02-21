@@ -124,8 +124,8 @@ class MyConvNet(object):
     A three-layer convolutional network with the following architecture:
 
     conv - batchnorm - relu - 2x2 max pool -
-    affine - batchnorm - relu -
-    affine  - batchnorm - relu -
+    affine - batchnorm - relu - dropout
+    affine  - batchnorm - relu - dropout
     affine - softmax
 
     The network operates on minibatches of data that have shape (N, C, H, W)
@@ -134,7 +134,7 @@ class MyConvNet(object):
     """
 
     def __init__(self, input_dim=(3, 32, 32), num_filters=32, filter_size=7,
-                 hidden_dim=100, num_classes=10, weight_scale=1e-3, reg=0.0, loss_fn='softmax',
+                 hidden_dim=100, num_classes=10, weight_scale=1e-3, reg=0.0, loss_fn='softmax', dropout=0,
                  dtype=np.float32):
         """
         Initialize a new network.
@@ -154,6 +154,7 @@ class MyConvNet(object):
         self.reg = reg
         self.dtype = dtype
         self.loss_fn = loss_fn
+        self.dropout = dropout
 
         ############################################################################
         # TODO: Initialize weights and biases for the three-layer convolutional    #
@@ -182,6 +183,7 @@ class MyConvNet(object):
         self.params['gamma3'] = np.ones(hidden_dim)
         self.params['beta3'] = np.zeros(hidden_dim)
         self.bn_params = [{'mode':'train'}, {'mode':'train'}, {'mode':'train'}]
+        self.dropout_param = {}
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -219,9 +221,14 @@ class MyConvNet(object):
         mode = 'test' if y is None else 'train'
         for bn_param in self.bn_params:
             bn_param['mode'] = mode
+        self.dropout_param['mode'] = mode
+        self.dropout_param['p'] = self.dropout
+
         out, pool_cache = conv_bn_relu_pool_forward(X, W1, b1, gamma1, beta1, conv_param, pool_param, self.bn_params[0])
         out, affine1_cache = affine_bn_relu_forward(out, W2, b2, gamma2, beta2, self.bn_params[1])
+        out, dropout1_cache = dropout_forward(out, self.dropout_param)
         out, affine2_cache = affine_bn_relu_forward(out, W3, b3, gamma3, beta3, self.bn_params[2])
+        out, dropout2_cache = dropout_forward(out, self.dropout_param)
         scores, affine3_cache = affine_forward(out, W4, b4)
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -244,11 +251,15 @@ class MyConvNet(object):
         grads['W4'] = dw + (self.reg * self.params['W4'])
         grads['b4'] = db
 
+        dx = dropout_backward(dx, dropout2_cache)
+
         dx, dw, db, dgamma, dbeta = affine_bn_relu_backward(dx, affine2_cache)
         grads['gamma3'] = dgamma
         grads['beta3'] = dbeta
         grads['W3'] = dw + (self.reg * self.params['W3'])
         grads['b3'] = db
+
+        dx = dropout_backward(dx, dropout1_cache)
 
         dx, dw, db, dgamma, dbeta = affine_bn_relu_backward(dx, affine1_cache)
         grads['gamma2'] = dgamma
