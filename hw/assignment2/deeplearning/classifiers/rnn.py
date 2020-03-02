@@ -140,15 +140,21 @@ class CaptioningRNN(object):
         # Forward path
         h0, cache_affine = affine_forward(features, W_proj, b_proj)
         out, cache_embed = word_embedding_forward(captions_in, W_embed)
-        out, cache_rnn = rnn_forward(out, h0, Wx, Wh, b)
-        scores, cache_vocab = temporal_affine_forward(out, W_vocab, b_vocab)
+        if self.cell_type == 'rnn':
+            h, cache_rnn = rnn_forward(out, h0, Wx, Wh, b)
+        else:
+            h, cache_lstm = lstm_forward(out, h0, Wx, Wh, b)
+        scores, cache_vocab = temporal_affine_forward(h, W_vocab, b_vocab)
         loss, dx = temporal_softmax_loss(scores, captions_out, mask) # should I set verbose=True?
 
         # Backward path
         dx, dw, db = temporal_affine_backward(dx, cache_vocab)
         grads['W_vocab'] = dw
         grads['b_vocab'] = db
-        dx, dh0, dWx, dWh, db = rnn_backward(dx, cache_rnn)
+        if self.cell_type == 'rnn':
+            dx, dh0, dWx, dWh, db = rnn_backward(dx, cache_rnn)
+        else:
+            dx, dh0, dWx, dWh, db = lstm_backward(dx, cache_lstm)
         grads['Wx'] = dWx
         grads['Wh'] = dWh
         grads['b'] = db
@@ -224,15 +230,19 @@ class CaptioningRNN(object):
         prev_h = h0
         captions[:, 0] = self._start
         prev_caption = captions[:, 0]
+        prev_c = np.zeros(prev_h.shape)
         for i in range(max_length):
-          word_embed, _ = word_embedding_forward(prev_caption, W_embed)
-          prev_h , _ = rnn_step_forward(word_embed, prev_h, Wx, Wh, b)
-          prev_h = np.expand_dims(prev_h, axis=1) # temporal_affine_forward expects dim (N, T, D), so add a temporally axis T=1
-          scores, _ = temporal_affine_forward(prev_h, W_vocab, b_vocab)
-          scores = np.squeeze(scores, axis=1) # Remove the temporally axis T
-          prev_h = np.squeeze(prev_h, axis=1) # Remove the temporally axis T
-          captions[:, i] = np.argmax(scores, axis=1)
-          prev_caption = captions[:, i]
+            word_embed, _ = word_embedding_forward(prev_caption, W_embed)
+            if self.cell_type == 'rnn':
+                prev_h, _ = rnn_step_forward(word_embed, prev_h, Wx, Wh, b)
+            else:
+                prev_h, prev_c, _ = lstm_step_forward(word_embed, prev_h, prev_c, Wx, Wh, b)
+            prev_h = np.expand_dims(prev_h, axis=1) # temporal_affine_forward expects dim (N, T, D), so add a temporally axis T=1
+            scores, _ = temporal_affine_forward(prev_h, W_vocab, b_vocab)
+            scores = np.squeeze(scores, axis=1) # Remove the temporally axis T
+            prev_h = np.squeeze(prev_h, axis=1) # Remove the temporally axis T
+            captions[:, i] = np.argmax(scores, axis=1)
+            prev_caption = captions[:, i]
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
