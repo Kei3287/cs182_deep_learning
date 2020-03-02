@@ -229,7 +229,7 @@ class CaptioningRNN(object):
           prev_h , _ = rnn_step_forward(word_embed, prev_h, Wx, Wh, b)
           prev_h = np.expand_dims(prev_h, axis=1) # temporal_affine_forward expects dim (N, T, D), so add a temporally axis T=1
           scores, _ = temporal_affine_forward(prev_h, W_vocab, b_vocab)
-          scores = np.squeeze(scores, axis=1)
+          scores = np.squeeze(scores, axis=1) # Remove the temporally axis T
           prev_h = np.squeeze(prev_h, axis=1) # Remove the temporally axis T
           captions[:, i] = np.argmax(scores, axis=1)
           prev_caption = captions[:, i]

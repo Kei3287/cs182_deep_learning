@@ -257,7 +257,14 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # TODO: Implement the forward pass for a single timestep of an LSTM.        #
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
-    pass
+    N, D = x.shape
+    _, H = prev_h.shape
+    a = x @ Wx + prev_h @ Wh + b.T
+    ai, af, ao, ag = a[:, 0:H], a[:, H:2*H], a[:, 2*H:3*H], a[:, 3*H:4*H]
+    f, i, g, o = sigmoid(af), sigmoid(ai), np.tanh(ag), sigmoid(ao)
+    next_c = f * prev_c + i * g
+    next_h = o * np.tanh(next_c)
+    cache = (x, prev_h, prev_c, Wx, Wh, b, a, f, i, g, o, next_c, next_h)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -289,7 +296,35 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
     # the output value from the nonlinearity.                                   #
     #############################################################################
-    pass
+    x, prev_h, prev_c, Wx, Wh, b, a, f, i, g, o, next_c, next_h = cache
+    N, D = x.shape
+    _, H = dnext_h.shape
+
+    dx = np.zeros((N, D))
+    dprev_h = np.zeros((N, H))
+    dprev_c = np.zeros((N, H))
+    dWx = np.zeros((D, 4*H))
+    dWh = np.zeros((H, 4*H))
+    db = np.zeros((4*H))
+    da = np.zeros((N, 4*H))
+
+    dout = dnext_c + (1-np.tanh(next_c)**2) * o * dnext_h
+    dprev_c = f * dout
+    df = prev_c * dout
+    di = g * dout
+    dg = i * dout
+    do = np.tanh(next_c) * dnext_h
+
+    da[:, :H] = i * (1 - i) * di
+    da[:, H:2*H] = f * (1 - f) * df
+    da[:, 2*H:3*H] = o * (1 - o) * do
+    da[:, 3*H:4*H] = (1 - g**2) * dg
+
+    dx = da @ Wx.T #(N, 4H)(D, 4H).T = (N, D)
+    dprev_h = da @ Wh.T #(N, 4H)(H, 4H).T = (N, H)
+    dWx = x.T @ da #(N, D).T(N, 4H).T = (D, 4H)
+    dWh = prev_h.T @ da #(N, H).T(N, 4H).T = (H, 4H)
+    db = np.sum(da, axis=0)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
