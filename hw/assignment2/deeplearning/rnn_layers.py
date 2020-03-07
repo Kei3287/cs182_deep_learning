@@ -257,7 +257,6 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # TODO: Implement the forward pass for a single timestep of an LSTM.        #
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
-    N, D = x.shape
     _, H = prev_h.shape
     a = x @ Wx + prev_h @ Wh + b.T
     ai, af, ao, ag = a[:, 0:H], a[:, H:2*H], a[:, 2*H:3*H], a[:, 3*H:4*H]
@@ -322,8 +321,8 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
 
     dx = da @ Wx.T #(N, 4H)(D, 4H).T = (N, D)
     dprev_h = da @ Wh.T #(N, 4H)(H, 4H).T = (N, H)
-    dWx = x.T @ da #(N, D).T(N, 4H).T = (D, 4H)
-    dWh = prev_h.T @ da #(N, H).T(N, 4H).T = (H, 4H)
+    dWx = x.T @ da #(N, D).T(N, 4H) = (D, 4H)
+    dWh = prev_h.T @ da #(N, H).T(N, 4H) = (H, 4H)
     db = np.sum(da, axis=0)
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -435,7 +434,7 @@ def temporal_affine_forward(x, w, b):
     """
     N, T, D = x.shape
     M = b.shape[0]
-    out = x.reshape(N * T, D).dot(w).reshape(N, T, M) + b
+    out = (x.reshape(N * T, D) @ w).reshape(N, T, M) + b
     cache = x, w, b, out
     return out, cache
 
@@ -453,12 +452,12 @@ def temporal_affine_backward(dout, cache):
     - dw: Gradient of weights, of shape (D, M)
     - db: Gradient of biases, of shape (M,)
     """
-    x, w, b, out = cache
+    x, w, b, _ = cache
     N, T, D = x.shape
     M = b.shape[0]
-
-    dx = dout.reshape(N * T, M).dot(w.T).reshape(N, T, D)
-    dw = dout.reshape(N * T, M).T.dot(x.reshape(N * T, D)).T
+    dout_reshaped = dout.reshape(N * T, M)
+    dx = (dout_reshaped @ w.T).reshape(N, T, D)
+    dw = (dout_reshaped.T @ x.reshape(N * T, D)).T
     db = dout.sum(axis=(0, 1))
 
     return dx, dw, db
