@@ -1,2 +1,2 @@
-model_checkpoint_path: "magic_model"
-all_model_checkpoint_paths: "magic_model"
+model_checkpoint_path: "final_language_model"
+all_model_checkpoint_paths: "final_language_model"
