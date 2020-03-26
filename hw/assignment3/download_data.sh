@@ -4,7 +4,8 @@ echo "Downloading data... Please wait, this might take a while..."
 rm cs182_homework.zip 2&> /dev/null
 rm -r ./dataset 2&> /dev/null
 
-wget https://bcourses.berkeley.edu/files/74751488/download?download_frd=1  -O cs182_homework.zip
+curl -O https://bcourses.berkeley.edu/files/74751488/download?download_frd=1  cs182_homework.zip
+
 
 echo "Finished downloading. Unzipping and Verifying Data Integrity..."
 if [ $(md5sum cs182_homework.zip | cut -d' ' -f 1)='eabf180bc6edf3655d9fce9086b89a64' ]; then
