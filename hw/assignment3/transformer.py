@@ -410,7 +410,7 @@ class Transformer(Model):
         # Part 1: Encode
         # Using the self.encoder, encode the source_sequence, and provide the encoder_mask variable as the optional mask.
 
-        encoder_output = None
+        encoder_output = self.encoder(source_sequence, encoder_mask)
 
         # Part 2: Decode
         # Finally, we need to do a decoding this should generate a
@@ -422,6 +422,6 @@ class Transformer(Model):
         # As usual, provide it with the encoder and decoder_masks
         # Finally, You should also pass it these two optional arguments:
         # shift_target_sequence_right=shift_target_sequence_right, mask_future=mask_future
-        decoder_output = None
+        decoder_output = self.decoder(target_sequence, encoder_output, encoder_mask, decoder_mask, mask_future, shift_target_sequence_right)
 
         return decoder_output # We return the decoder's output
