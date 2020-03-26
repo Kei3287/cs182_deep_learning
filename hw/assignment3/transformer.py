@@ -99,21 +99,22 @@ class TransformerEncoderBlock(Model):
 
         # First normalize the input with the LayerNorm initialized in the __init__ function (self.norm)
         # Step 1
-        norm_inputs = None
+        print(inputs)
+        norm_inputs = self.norm(inputs)
 
         # Apply the self-attention with the normalized input, use the self_attention mask as the optional mask parameter.
         # Using self.self_attention
         # Step 2
-        attn = None
-
+        attn = self.self_attention(inputs=(norm_inputs, norm_inputs), mask=self_attention_mask)
+        print('attn', attn)
         # Apply the residual connection.
         # res_attn should sum the attention output and the original, non-normalized inputs
         # Step 3
-        res_attn = None # Residual connection of the attention block
+        res_attn = attn + inputs # Residual connection of the attention block
 
         # Apply the self.feed_forward to get the output of the EncoderBlock.
         # Step 4
-        output = None
+        output = self.feed_forward(res_attn)
         return output
 
 
@@ -143,7 +144,7 @@ class TransformerDecoderBlock(Model):
 
         self.feed_forward = TransformerFeedForward(filter_size, hidden_size, dropout)
 
-    def call(self, decoder_inputs, encoder_outputs, self_attention_mask=None, cross_attention_mask=None):    
+    def call(self, decoder_inputs, encoder_outputs, self_attention_mask=None, cross_attention_mask=None):
         # The cross-attention mask should have shape [batch_size x target_len x input_len]
 
         ####################################  YOUR CODE HERE  ####################################
@@ -418,7 +419,7 @@ class Transformer(Model):
         # tensor of shape [batch_size x target_length x d_model]
         # from the encoder output.
 
-        # Using the self.decoder, provide it with the decoder input, and the encoder_output. 
+        # Using the self.decoder, provide it with the decoder input, and the encoder_output.
 
         # As usual, provide it with the encoder and decoder_masks
         # Finally, You should also pass it these two optional arguments:
