@@ -99,14 +99,12 @@ class TransformerEncoderBlock(Model):
 
         # First normalize the input with the LayerNorm initialized in the __init__ function (self.norm)
         # Step 1
-        print(inputs)
         norm_inputs = self.norm(inputs)
 
         # Apply the self-attention with the normalized input, use the self_attention mask as the optional mask parameter.
         # Using self.self_attention
         # Step 2
         attn = self.self_attention(inputs=(norm_inputs, norm_inputs), mask=self_attention_mask)
-        print('attn', attn)
         # Apply the residual connection.
         # res_attn should sum the attention output and the original, non-normalized inputs
         # Step 3
@@ -152,32 +150,32 @@ class TransformerDecoderBlock(Model):
 
         # Step 1
         # Normalize the decoder's input using the self_norm
-        norm_decoder_inputs = None
+        norm_decoder_inputs = self.self_norm(decoder_inputs)
 
         # Step 2
         # Get the target self-attention using the self_attention, then apply the residual layer
-        target_selfattn = None
-        res_target_self_attn = None
+        target_selfattn = self.self_attention(inputs=(norm_decoder_inputs, norm_decoder_inputs), mask=self_attention_mask)
+        res_target_self_attn = target_selfattn + decoder_inputs
 
 
         # Step 3
         # Normalize the output of the self-attention, as well as the encoder_outputs
         # using cross_norm_target and cross_norm_source
-        norm_target_selfattn = None
-        norm_encoder_outputs = None
+        norm_target_selfattn = self.self_norm(res_target_self_attn) # TODO: should it be target_selfattn??
+        norm_encoder_outputs = self.self_norm(encoder_outputs)
 
         # Step 4
         # Apply the cross attention. Think about what the query and what the memory elements are
         # This is done using self.cross_attention, and use the mask we provide: cross_attention_mask, as the optional mask parameter
-        encdec_attention = None
+        encdec_attention = self.cross_attention(inputs=(norm_target_selfattn, norm_encoder_outputs), mask=cross_attention_mask)
 
         # Step 5
         # The cross-attention is followed by another residual connection
-        res_encdec_attention = None
+        res_encdec_attention = encdec_attention + res_target_self_attn
 
         # Step 6
         # Apply the feed-foward layer to the output of the residual of the cross_attention
-        output = None
+        output = self.feed_forward(res_encdec_attention)
 
         return output
 
