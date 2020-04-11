@@ -161,8 +161,8 @@ class TransformerDecoderBlock(Model):
         # Step 3
         # Normalize the output of the self-attention, as well as the encoder_outputs
         # using cross_norm_target and cross_norm_source
-        norm_target_selfattn = self.self_norm(res_target_self_attn) # TODO: should it be target_selfattn??
-        norm_encoder_outputs = self.self_norm(encoder_outputs)
+        norm_target_selfattn = self.cross_norm_target(res_target_self_attn) # TODO: should it be target_selfattn??
+        norm_encoder_outputs = self.cross_norm_source(encoder_outputs)
 
         # Step 4
         # Apply the cross attention. Think about what the query and what the memory elements are

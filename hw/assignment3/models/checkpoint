@@ -1,2 +1,2 @@
-model_checkpoint_path: "final_transformer_summarization"
-all_model_checkpoint_paths: "final_transformer_summarization"
+model_checkpoint_path: "/content/gdrive/My Drive/Colab Notebooks/cs182/CS182_HW03/models/final_transformer_summarization"
+all_model_checkpoint_paths: "/content/gdrive/My Drive/Colab Notebooks/cs182/CS182_HW03/models/final_transformer_summarization"

@@ -10,6 +10,7 @@ Through the Notebook, you will produce 2 model files in the .ckpt format. These 
 
 To prepared your ZIP deliverable, read and follow instructions in the "Preparing a Submission" section.
 
+
 # Installation
 
 This assignment requires Python 3. If you plan to complete this assignment with a local machine, and not in the Google Colab, please install Python 3.
@@ -37,67 +38,9 @@ Otherwise:
 pip3 install -r requirements.txt
 ```
 
-## Windows / Virtual Machine
+## Windows
 
-This assignment is provided pre-setup with a VirtualBox image.
-
-Installation Instructions:
-
-1. Follow the instructions here to install VirtualBox if it is not already installed: https://www.virtualbox.org/manual/ch02.html (Links to an external site.)
-
-2. Download the VirtualBox image. (Be sure that you're logged in to your Berkeley email, otherwise you won't have access)
-
-3. Load the VirtualBox image using the instructions here: https://docs.oracle.com/cd/E26217_01/E26796/html/qs-import-vm.html (Links to an external site.)
-
-4. Log in to the VM. The username and password are both cs182. Pytorch and Tensorflow environments are both provided for you with the requirements already installed. Simply use one of:
-
-conda activate pytorch
-conda activate tensorflow
-to acccess the environment.
-
-5. Download the assignment code onto the VM yourself.
-
-FAQ:
-
-- I get an error "AMD-V is disabled in the BIOS" or "Intel-VT is disabled in the BIOS" or similar
-
-Solution: See https://docs.fedoraproject.org/en-US/Fedora/13/html/Virtualization_Guide/sect-Virtualization-Troubleshooting-Enabling_Intel_VT_and_AMD_V_virtualization_hardware_extensions_in_BIOS.html (Links to an external site.)
-
-- The virtual machine won't boot
-
-Solutions:
-
-- Try increasing the number of allocated CPUs: Under Settings→System→Processor
-- Try increasing the amount of allocated memory: https://superuser.com/questions/926339/how-to-change-the-ram-allocated-to-an-os-in-virtualboxWorking on a Virtual Machine
-This assignment is provided pre-setup with a VirtualBox image.
-
-Installation Instructions:
-
-1. Follow the instructions here to install VirtualBox if it is not already installed: https://www.virtualbox.org/manual/ch02.html (Links to an external site.)
-
-2. Download the VirtualBox image here (Links to an external site.). (Be sure that you're logged in to your Berkeley email, otherwise you won't have access)
-
-3. Load the VirtualBox image using the instructions here: https://docs.oracle.com/cd/E26217_01/E26796/html/qs-import-vm.html (Links to an external site.)
-
-4. Log in to the VM. The username and password are both cs182. Pytorch and Tensorflow environments are both provided for you with the requirements already installed. Simply use one of:
-
-conda activate pytorch
-conda activate tensorflow
-to acccess the environment.
-
-5. Download the assignment code onto the VM yourself.
-
-FAQ:
-
-- I get an error "AMD-V is disabled in the BIOS" or "Intel-VT is disabled in the BIOS" or similar
-Solution: See https://docs.fedoraproject.org/en-US/Fedora/13/html/Virtualization_Guide/sect-Virtualization-Troubleshooting-Enabling_Intel_VT_and_AMD_V_virtualization_hardware_extensions_in_BIOS.html (Links to an external site.)
-
-- The virtual machine won't boot
-
-Solutions:
-- Try increasing the number of allocated CPUs: Under Settings→System→Processor
-- Try increasing the amount of allocated memory: https://superuser.com/questions/926339/how-to-change-the-ram-allocated-to-an-os-in-virtualbox
-
+Windows is not officially supported. There is a chance that you will be able to get this working with Anaconda on windows, however we strongly suggest using a virtual machine (virtual box) with an installation of linux, as it will likely be more stable, and the GSIs will be able to provide additional assistance. 
 
 ## Colab
 
@@ -113,7 +56,7 @@ To download the data, run the following command from the assignment root directo
 ```bash
 bash download_data.sh
 ```
-If you get the error "bash: ./download_data.sh: Permission denied" run `chmod +x download_data.sh` and try again.
+If you get the error "bash: ./download_data.sh: Permission denied" run `chmod +x download_data.sh` and try again. 
 
 # Preparing a Submission
 
@@ -127,7 +70,7 @@ Check that your submission contains:
 - "capita.py", "transformer.py", "transformer_attention.py", "transformer_layers.py"
 - Your model files (.index, .cptk, .data) for each notebook. The names of the models you upload should match the names you put in the Jupyter notebooks. This should be a total of 6 files.
 
-If you get the error "bash: ./prepare_submission.sh: Permission denied" run `chmod +x download_data.sh` and try again.
+If you get the error "bash: ./prepare_submission.sh: Permission denied" run `chmod +x download_data.sh` and try again. 
 
 # Questions
 
