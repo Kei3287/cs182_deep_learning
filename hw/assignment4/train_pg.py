@@ -151,6 +151,7 @@ class Agent(object):
             # ------------------------------------------------------------------
             sy_mean = build_mlp(self.sy_ob_no, self.ac_dim, "policy_network_mean", self.n_layers, self.size)
             sy_logstd = tf.Variable(initial_value=tf.zeros([self.ac_dim]), name="policy_network_logstd", dtype=tf.float32)
+            sy_mean = tf.squeeze(sy_mean)
             # ------------------------------------------------------------------
             # END OF YOUR CODE
             # ------------------------------------------------------------------
@@ -238,8 +239,7 @@ class Agent(object):
             # START OF YOUR CODE
             # ------------------------------------------------------------------
             categorical_distribution = tfp.distributions.Categorical(logits=sy_logits_na)
-            sy_logprob_n = - categorical_distribution.log_prob(sy_ac_na)
-            print("log prob", sy_logprob_n)
+            sy_logprob_n = categorical_distribution.log_prob(sy_ac_na)
             # ------------------------------------------------------------------
             # END OF YOUR CODE
             # ------------------------------------------------------------------
@@ -249,8 +249,7 @@ class Agent(object):
             # START OF YOUR CODE
             # ------------------------------------------------------------------
             mn_distribution = tfp.distributions.MultivariateNormalDiag(loc=sy_mean, scale_diag=tf.exp(sy_logstd))
-            sy_logprob_n = - mn_distribution.log_prob(sy_ac_na)
-            print("log prob", sy_logprob_n)
+            sy_logprob_n = mn_distribution.log_prob(sy_ac_na)
             # ------------------------------------------------------------------
             # END OF YOUR CODE
             # ------------------------------------------------------------------
@@ -297,7 +296,6 @@ class Agent(object):
         # START OF YOUR CODE
         # ------------------------------------------------------------------
         self.loss = - tf.reduce_mean(self.sy_logprob_n * self.sy_adv_n)
-        print("loss must be negative", self.loss)
         # ------------------------------------------------------------------
         # END OF YOUR CODE
         # ------------------------------------------------------------------
@@ -417,23 +415,22 @@ class Agent(object):
         # START OF YOUR CODE
         # ------------------------------------------------------------------
         num_paths = len(re_n)
-        print("num_paths", num_paths)
         q_n = []
         if not self.reward_to_go:
             for i in range(num_paths):
-                total_rew = 0
+                q_val = 0
                 T = len(re_n[i])
                 for t in range(T):
-                    total_rew = re_n[i][t] + self.gamma * total_rew
-                q_n.extend([total_rew] * T)
+                    q_val = re_n[i][t] + self.gamma * q_val
+                q_n.extend([q_val] * T)
         else:
             for i in range(num_paths):
-                total_rew = 0
+                q_val = 0
                 T = len(re_n[i])
                 rewards = np.zeros(T)
                 for t in reversed(range(T)):
-                    total_rew = re_n[i][t] + self.gamma * total_rew
-                    rewards[t] = total_rew
+                    q_val = re_n[i][t] + self.gamma * q_val
+                    rewards[t] = q_val
                 q_n.extend(rewards.tolist())
         q_n = np.array(q_n)
         # ------------------------------------------------------------------
