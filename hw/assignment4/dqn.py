@@ -178,7 +178,15 @@ class QLearner(object):
         # ----------------------------------------------------------------------
         # START OF YOUR CODE
         # ----------------------------------------------------------------------
+        q = q_func(obs_t_float, self.num_actions, scope="q_func", reuse=False)
+        q_target = q_func(obs_tp1_float, self.num_actions, scope="q_target", reuse=False)
+        q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
+        target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_target')
 
+        q_tp1 = tf.reduce_max(q_target, axis=1)
+        y = self.rew_t_ph + (1 - self.done_mask_ph) * gamma * q_tp1
+        q_val = tf.reduce_sum(q * tf.one_hot(self.act_t_ph, self.num_actions), axis=1)
+        self.total_error = huber_loss(y - q_val)
         # ----------------------------------------------------------------------
         # END OF YOUR CODE
         # ----------------------------------------------------------------------
@@ -208,7 +216,7 @@ class QLearner(object):
         self.mean_episode_reward      = -float('nan')
         self.std_episode_reward       = -float('nan')
         self.best_mean_episode_reward = -float('inf')
-        if cartpole: 
+        if cartpole:
             self.log_every_n_steps = 1000
         else:
             self.log_every_n_steps = 10000
@@ -272,15 +280,15 @@ class QLearner(object):
         This is only done if the replay buffer contains enough samples for us to
         learn something useful -- until then, the model will not be initialized
         and random actions should be taken.  Training consists of four steps:
-        
+
         3.a: Use the replay buffer to sample a batch of transitions. See the
         replay buffer code for function definitions.
-        
+
         3.b: The boolean variable `model_initialized` indicates whether or not
         the model has been initialized. If the model is not initialized, then
         initialize it via standard TensorFlow initialization (you might find
         `tf.global_variables()` useful). Then, update the target network.
-        
+
         3.c: Train the model. You will need to use `self.train_fn` and
         `self.total_error` ops that were created earlier: `self.total_error` is
         what you created to compute the total Bellman error in a batch, and
@@ -294,7 +302,7 @@ class QLearner(object):
           self.obs_tp1_ph
           self.done_mask_ph
           self.learning_rate  (get from `self.optimizer_spec`)
-        
+
         3.d: Periodically update the target network by calling
 
           self.session.run(self.update_target_fn)
@@ -308,7 +316,21 @@ class QLearner(object):
             # ------------------------------------------------------------------
             # START OF YOUR CODE
             # ------------------------------------------------------------------
-
+            obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = self.replay_buffer.sample(self.batch_size)
+            if not self.model_initialized:
+                self.session.run(tf.global_variables_initializer(), feed_dict ={self.obs_t_ph: obs_batch, self.obs_tp1_ph: next_obs_batch})
+                self.model_initialized = True
+            feed = {
+                self.obs_t_ph: obs_batch,
+                self.act_t_ph: act_batch,
+                self.rew_t_ph: rew_batch,
+                self.obs_t_ph: next_obs_batch,
+                self.done_mask_ph: done_mask,
+                self.learning_rate: self.optimizer_spec.lr_schedule.value(self.t)
+            }
+            self.session.run(self.train_fn, feed_dict=feed)
+            if self.num_param_updates % self.target_update_freq == 0:
+                self.session.run(self.update_target_fn)
             # ------------------------------------------------------------------
             # END OF YOUR CODE
             # ------------------------------------------------------------------

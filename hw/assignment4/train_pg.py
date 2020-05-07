@@ -150,8 +150,8 @@ class Agent(object):
             # START OF YOUR CODE
             # ------------------------------------------------------------------
             sy_mean = build_mlp(self.sy_ob_no, self.ac_dim, "policy_network_mean", self.n_layers, self.size)
-            sy_logstd = tf.Variable(initial_value=tf.zeros([self.ac_dim]), name="policy_network_logstd", dtype=tf.float32)
             sy_mean = tf.squeeze(sy_mean)
+            sy_logstd = tf.Variable(initial_value=tf.zeros([self.ac_dim]), name="policy_network_logstd", dtype=tf.float32)
             # ------------------------------------------------------------------
             # END OF YOUR CODE
             # ------------------------------------------------------------------
@@ -190,7 +190,7 @@ class Agent(object):
             # ------------------------------------------------------------------
             # START OF YOUR CODE
             # ------------------------------------------------------------------
-            sy_sampled_ac = tf.multinomial(sy_logits_na, num_samples=1)
+            sy_sampled_ac = tf.random.categorical(sy_logits_na, num_samples=1)
             sy_sampled_ac = tf.squeeze(sy_sampled_ac)
             # ------------------------------------------------------------------
             # END OF YOUR CODE
@@ -200,7 +200,7 @@ class Agent(object):
             # ------------------------------------------------------------------
             # START OF YOUR CODE
             # ------------------------------------------------------------------
-            sy_sampled_ac = tf.random.normal(shape=tf.shape(sy_mean), mean=sy_mean, stddev=tf.exp(sy_logstd))
+            sy_sampled_ac = sy_mean + tf.exp(sy_logstd) * tf.random.normal(shape=tf.shape(sy_mean))
             # ------------------------------------------------------------------
             # END OF YOUR CODE
             # ------------------------------------------------------------------
